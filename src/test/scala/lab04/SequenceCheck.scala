@@ -20,7 +20,8 @@ object SequenceCheck extends Properties("Sequence"):
   // define custom arbitrary lists and mappers
   given intSeqArbitrary: Arbitrary[Sequence[Int]] = Arbitrary(sequenceGen[Int]())
   given mapperArbitrary: Arbitrary[Int => Int] = Arbitrary(Gen.oneOf[Int => Int]( _+1, _*2, x => x*x))
-  given predicateArbitrary: Arbitrary[Int=>Boolean]= Arbitrary(Gen.oneOf[Int => Boolean]( _%2==0, _%3==0, _==0))
+  given predicateArbitrary: Arbitrary[Int=>Boolean] = Arbitrary(Gen.oneOf[Int => Boolean]( _%2==0, _%3==0, _==0))
+  given intMapArbitrary : Arbitrary[Int=>Sequence[Int]] = Arbitrary(Gen.oneOf[Int => Sequence[Int]](x=>Cons(x+1, Nil()), x=>Cons(x+1, Cons(x-1, Nil())), x=>Nil()))
 
   // check axioms, universally
   property("mapAxioms") =
@@ -42,6 +43,21 @@ object SequenceCheck extends Properties("Sequence"):
         case (Nil(), pred) => seq.filter(pred) == Nil()
         case (Cons(h, t), pred) if pred(h) => seq.filter(pred) == Cons(h, filter(t) (pred))
         case (Cons(h, t), pred) => seq.filter(pred) == filter(t)(pred)
+
+  property("concatAxioms")=
+    forAll: (seq1: Sequence[Int], seq2: Sequence[Int]) =>
+      (seq1, seq2) match
+        case (Nil(), Nil())=> seq1.concat(seq2) == Nil()
+        case (seq1, Nil())=> seq1.concat(seq2) == seq1
+        case (Nil(), seq2) => seq1.concat(seq2) == seq2
+        case (Cons(h, t), seq2) => seq1.concat(seq2) == Cons(h, t.concat(seq2))
+
+  property("flatMapAxioms")=
+    forAll: (seq: Sequence[Int], map: Int => Sequence[Int]) =>
+      (seq, map) match
+        case (Nil(), map)=> seq.flatMap(map) == Nil()
+        case (Cons(h, t), map) => seq.flatMap(map) == map(h).concat(t.flatMap(map))
+
 
   // how to check a generator works as expected
   @main def showSequences() =
