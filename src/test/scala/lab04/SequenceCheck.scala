@@ -20,6 +20,7 @@ object SequenceCheck extends Properties("Sequence"):
   // define custom arbitrary lists and mappers
   given intSeqArbitrary: Arbitrary[Sequence[Int]] = Arbitrary(sequenceGen[Int]())
   given mapperArbitrary: Arbitrary[Int => Int] = Arbitrary(Gen.oneOf[Int => Int]( _+1, _*2, x => x*x))
+  given predicateArbitrary: Arbitrary[Int=>Boolean]= Arbitrary(Gen.oneOf[Int => Boolean]( _%2==0, _%3==0, _==0))
 
   // check axioms, universally
   property("mapAxioms") =
@@ -28,6 +29,19 @@ object SequenceCheck extends Properties("Sequence"):
       (seq, f) match
         case (Nil(), f) =>  map(Nil())(f) == Nil()
         case (Cons(h, t), f) => map(Cons(h, t))(f) == Cons(f(h), map(t)(f))
+
+  property("sumAxioms") =
+    forAll: (seq: Sequence[Int])=>
+      seq match
+        case Nil() => seq.sum == 0
+        case Cons(h, t) => seq.sum == h + sum(t)
+
+  property("filterAxioms") =
+    forAll: (seq: Sequence[Int], pred: Int => Boolean) =>
+      (seq, pred) match
+        case (Nil(), pred) => seq.filter(pred) == Nil()
+        case (Cons(h, t), pred) if pred(h) => seq.filter(pred) == Cons(h, filter(t) (pred))
+        case (Cons(h, t), pred) => seq.filter(pred) == filter(t)(pred)
 
   // how to check a generator works as expected
   @main def showSequences() =
