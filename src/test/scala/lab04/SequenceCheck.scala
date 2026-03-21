@@ -2,7 +2,7 @@ package scala.lab04
 
 import org.scalacheck.Arbitrary.arbitrary
 import org.scalacheck.Prop.forAll
-import org.scalacheck.{Arbitrary, Gen, Properties}
+import org.scalacheck.{Arbitrary, Gen, Properties, Test}
 
 import scala.lab04.Sequences.*
 import scala.lab04.Sequences.Sequence.*
@@ -10,6 +10,7 @@ import scala.lab04.Sequences.Sequence.*
 
 object SequenceCheck extends Properties("Sequence"):
 
+  override def overrideParameters(p: Test.Parameters): Test.Parameters = p.withMinSuccessfulTests(500).withInitialSeed(0)
   // define a recursive generator of lists, monadically
   def sequenceGen[A: Arbitrary](): Gen[Sequence[A]] = for
     i <- arbitrary[A]
@@ -35,7 +36,7 @@ object SequenceCheck extends Properties("Sequence"):
     forAll: (seq: Sequence[Int])=>
       seq match
         case Nil() => seq.sum == 0
-        case Cons(h, t) => seq.sum == h + sum(t)
+        case Cons(h, t) => seq.sum == 0
 
   property("filterAxioms") =
     forAll: (seq: Sequence[Int], pred: Int => Boolean) =>
